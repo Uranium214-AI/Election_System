@@ -1,4 +1,4 @@
-ICSE Election System 2026
+ Election System 2026
 A secure, local-area network (LAN) based voting system built with Java for school student elections.
 
 Overview
@@ -7,7 +7,7 @@ This project is a desktop-based election management suite designed to modernize 
 Features
 Dual-Mode Architecture: Run as a Server to host the election and tally results, or as a Client to allow students to cast votes from individual terminals.
 
-Real-time Tallying: Automatic calculation of votes with built-in protection against duplicate submissions using unique Student GR numbers.
+Real-time Tallying: Automatic calculation of votes with built-in protection against duplicate submissions using unique Student iD numbers.
 
 Admin Security: Dedicated Admin panel for real-time monitoring of election results, protected by a hard-coded security key.
 
