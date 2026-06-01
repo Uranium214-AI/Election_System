@@ -5,8 +5,12 @@ public class AdminPanel extends JPanel {
     public AdminPanel(ElectionMain parent) {
         setBackground(Color.WHITE);
         JButton back = new JButton("Back to Login");
-        back.addActionListener(e -> ((CardLayout)parent.getContentPane().getComponent(0).getLayout()).show(parent.getContentPane().getComponent(0), "AUTH"));
-    }
+        back.addActionListener(e -> {
+    Container parentContainer = parent.getContentPane();
+    // We cast to Container so Java knows it has a Layout
+    Container mainPanel = (Container) parentContainer.getComponent(0);
+    ((CardLayout) mainPanel.getLayout()).show(mainPanel, "AUTH");
+});
 
     @Override
     protected void paintComponent(Graphics g) {
