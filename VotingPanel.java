@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.util.*;
+import java.util.list;
 
 public class VotingPanel extends JPanel {
     private ElectionMain parent;
