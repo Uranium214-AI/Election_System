@@ -10,7 +10,9 @@ public class AdminPanel extends JPanel {
     // We cast to Container so Java knows it has a Layout
     Container mainPanel = (Container) parentContainer.getComponent(0);
     ((CardLayout) mainPanel.getLayout()).show(mainPanel, "AUTH");
-});
+        });
+        add(back);
+    }
 
     @Override
     protected void paintComponent(Graphics g) {
