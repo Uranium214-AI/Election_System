@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vidya Valley School 2026 - Elections</title>
+    <link rel="icon" href="https://vidyavalley.com/wp-content/uploads/2020/11/cropped-vvs-favicon-32x32.png" sizes="32x32" />
     
     <!-- React & ReactDOM -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -190,6 +191,11 @@
             box-shadow: 0 15px 25px rgba(29, 135, 228, 0.3);
         }
         
+        .btn-primary:active {
+            transform: translateY(1px);
+            box-shadow: 0 5px 10px rgba(0, 100, 75, 0.2);
+        }
+        
         .btn-primary:disabled {
             background: #cbd5e1;
             cursor: not-allowed;
@@ -256,6 +262,10 @@
             border-color: rgba(29, 135, 228, 0.3);
             transform: translateX(5px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        
+        .candidate-item:active {
+            transform: scale(0.98);
         }
 
         .candidate-item.selected {
@@ -397,6 +407,11 @@
             background: #1976d2;
             transform: translateY(-1px);
         }
+        
+        .btn-next:active {
+            transform: translateY(1px) scale(0.98);
+            box-shadow: 0 2px 5px rgba(29, 135, 228, 0.2);
+        }
 
         .success-card {
             text-align: center;
@@ -451,12 +466,7 @@
             </svg>
         );
         
-        const SchoolIcon = () => (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-                <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-            </svg>
-        );
+
 
         const App = () => {
             const [enrollmentNumber, setEnrollmentNumber] = useState('');
@@ -504,13 +514,6 @@
                     ...prev,
                     [postId]: candidateId
                 }));
-                
-                // Auto advance to next post after a short delay to show the animation
-                if (currentPostIndex < posts.length - 1) {
-                    setTimeout(() => {
-                        setCurrentPostIndex(prev => prev + 1);
-                    }, 600); // 600ms delay gives time to see the selection state
-                }
             };
 
             const handleNext = () => {
@@ -532,7 +535,7 @@
             const Header = () => (
                 <header>
                     <div className="logo">
-                        <SchoolIcon />
+                        <img src="https://vidyavalley.com/wp-content/uploads/2020/11/logo1-1.png" alt="Vidya Valley Logo" style={{ height: '45px', width: 'auto', objectFit: 'contain' }} />
                         <span>Vidya Valley School 2026</span>
                     </div>
                     {isLoggedIn && (
@@ -552,8 +555,8 @@
                         <Header />
                         <div className="login-container">
                             <div className="login-card">
-                                <h1 className="login-title">Student Portal</h1>
-                                <p className="login-subtitle">Sign in to cast your vote for the 2026 elections</p>
+                                <h1 className="login-title">Elections 2026</h1>
+                                <p className="login-subtitle">Cast your vote!</p>
                                 
                                 <form onSubmit={handleLogin}>
                                     <div className="input-group">
