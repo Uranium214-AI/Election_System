@@ -2,32 +2,56 @@ import javax.swing.*;
 import java.awt.*;
 
 public class AuthPanel extends JPanel {
-    private JTextField grField = new JTextField(15), nameField = new JTextField(15);
-    private ElectionMain parent;
+    private final JTextField inputField = new JTextField(12);
+    private final ElectionMain parent;
 
     public AuthPanel(ElectionMain parent) {
         this.parent = parent;
         setLayout(new GridBagLayout());
-        setBackground(new Color(240, 240, 245));
-        GridBagConstraints g = new GridBagConstraints();
-        g.insets = new Insets(10,10,10,10);
+        setBackground(NovaTheme.OBSIDIAN);
 
-        JLabel l = new JLabel("Enter Student Details"); l.setFont(new Font("Arial", 1, 24));
-        g.gridwidth = 2; add(l, g);
-        g.gridwidth = 1; g.gridy = 1; add(new JLabel("Name:"), g); g.gridx = 1; add(nameField, g);
-        g.gridy = 2; g.gridx = 0; add(new JLabel("GR No:"), g); g.gridx = 1; add(grField, g);
-        
-        JButton b = new JButton("Login");
-        b.addActionListener(e -> {
-            try {
-                boolean voted = ElectionMain.isClient ? 
-                    NetworkClient.checkVoted(grField.getText(), nameField.getText()) :
-                    ElectionData.hasVoted(grField.getText(), nameField.getText());
-                if (voted) JOptionPane.showMessageDialog(this, "Already Voted!");
-                else parent.startVoting(grField.getText(), nameField.getText());
-            } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Server Offline"); }
-        });
-        g.gridy = 3; g.gridx = 0; g.gridwidth = 2; add(b, g);
+        JLabel title = new JLabel("NOVA FLOW CYBER BALLOT CORE");
+        title.setFont(NovaTheme.FONT_HEADING);
+        title.setForeground(NovaTheme.NEON_CYAN);
+
+        inputField.setFont(new Font("Monospaced", Font.BOLD, 30));
+        inputField.setBackground(new Color(20, 22, 30));
+        inputField.setForeground(Color.WHITE);
+        inputField.setHorizontalAlignment(JTextField.CENTER);
+        inputField.setCaretColor(NovaTheme.NEON_CYAN);
+        inputField.setBorder(BorderFactory.createLineBorder(NovaTheme.NEON_CYAN, 1));
+
+        JButton loginBtn = new JButton("AUTHENTICATE DIGITAL KEY");
+        loginBtn.addActionListener(e -> attemptAccess());
+        inputField.addActionListener(e -> attemptAccess());
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(20, 0, 20, 0);
+        gbc.gridx = 0; gbc.gridy = 0; add(title, gbc);
+        gbc.gridy = 1; add(inputField, gbc);
+        gbc.gridy = 2; add(loginBtn, gbc);
     }
-    public void reset() { grField.setText(""); nameField.setText(""); }
+
+    private void attemptAccess() {
+        String code = inputField.getText().trim();
+
+        if (code.equals("9z00")) {
+            parent.transitionToScreen("ADMIN");
+            return;
+        }
+
+        // Regex: 1-2 digits, 1 CAPITAL letter, 1-3 digits (e.g. 9D16)
+        if (!code.matches("^\\d{1,2}[A-Z]\\d{1,3}$")) {
+            JOptionPane.showMessageDialog(this, "INVALID FORMAT: Use Grade + CAPS Section + Roll (e.g. 9D16)");
+            return;
+        }
+
+        if (ElectionData.checkHasVoted(code)) {
+            JOptionPane.showMessageDialog(this, "ACCESS DENIED: IDENTITY ALREADY LOGGED.");
+        } else {
+            parent.initiateVoting(code);
+        }
+    }
+
+    public void reset() { inputField.setText(""); inputField.requestFocus(); }
 }

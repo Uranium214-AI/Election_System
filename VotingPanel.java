@@ -1,32 +1,61 @@
 import javax.swing.*;
 import java.awt.*;
 import java.util.*;
-import java.util.List;
 
 public class VotingPanel extends JPanel {
-    private ElectionMain parent;
-    private Map<String, String> choices = new HashMap<>();
-    private List<AbstractButton> btns = new ArrayList<>();
+    private final ElectionMain parent;
+    private final JPanel scrollContainer = new JPanel();
+    private final Map<String, ButtonGroup> groups = new HashMap<>();
 
     public VotingPanel(ElectionMain parent) {
         this.parent = parent;
         setLayout(new BorderLayout());
-        JTabbedPane tabs = new JTabbedPane();
+        setBackground(NovaTheme.OBSIDIAN);
 
-        for (String pos : ElectionData.nomineesByPosition.keySet()) {
-            JPanel p = new JPanel();
-            ButtonGroup bg = new ButtonGroup();
-            for (String nom : ElectionData.nomineesByPosition.get(pos)) {
-                JToggleButton b = new JToggleButton(nom);
-                b.setPreferredSize(new Dimension(200, 100));
-                b.addActionListener(e -> choices.put(pos, nom));
-                bg.add(b); btns.add(b); p.add(b);
-            }
-            tabs.addTab(pos, p);
-        }
-        JButton sub = new JButton("SUBMIT VOTE");
-        sub.addActionListener(e -> parent.commitVote(choices));
-        add(tabs, BorderLayout.CENTER); add(sub, BorderLayout.SOUTH);
+        scrollContainer.setLayout(new BoxLayout(scrollContainer, BoxLayout.Y_AXIS));
+        scrollContainer.setBackground(NovaTheme.OBSIDIAN);
+
+        JButton submit = new JButton("CONFIRM AND INJECT BALLOT");
+        submit.addActionListener(e -> processSelection());
+        add(new JScrollPane(scrollContainer), BorderLayout.CENTER);
+        add(submit, BorderLayout.SOUTH);
     }
-    public void reset() { choices.clear(); for(var b : btns) b.setSelected(false); }
+
+    public void loadNominees() {
+        scrollContainer.removeAll();
+        groups.clear();
+
+        for (String category : ElectionData.nomineeMap.keySet()) {
+            JLabel catLabel = new JLabel(category);
+            catLabel.setFont(NovaTheme.FONT_HEADING);
+            catLabel.setForeground(NovaTheme.NEON_CYAN);
+            scrollContainer.add(catLabel);
+
+            JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            row.setBackground(NovaTheme.OBSIDIAN);
+            ButtonGroup bg = new ButtonGroup();
+
+            for (String nominee : ElectionData.nomineeMap.get(category)) {
+                CyberCard card = new CyberCard(nominee);
+                card.setActionCommand(nominee);
+                bg.add(card);
+                row.add(card);
+            }
+            groups.put(category, bg);
+            scrollContainer.add(row);
+        }
+        revalidate();
+    }
+
+    private void processSelection() {
+        Map<String, String> selections = new HashMap<>();
+        for (var entry : groups.entrySet()) {
+            if (entry.getValue().getSelection() == null) {
+                JOptionPane.showMessageDialog(this, "PLEASE SELECT A CANDIDATE FOR " + entry.getKey());
+                return;
+            }
+            selections.put(entry.getKey(), entry.getValue().getSelection().getActionCommand());
+        }
+        parent.finalizeBallot(selections);
+    }
 }
