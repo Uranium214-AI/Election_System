@@ -3,72 +3,65 @@ import java.awt.*;
 import java.util.Map;
 
 public class ElectionMain extends JFrame {
-    private CardLayout cardLayout = new CardLayout();
-    private JPanel mainContainer = new JPanel(cardLayout);
-    private AuthPanel authPanel;
-    private VotingPanel votingPanel;
-    private AdminPanel adminPanel;
-    public static boolean isClient = false;
-    private String activeGr, activeName;
-
-    public ElectionMain() {
-        setTitle("ICSE Election System 2026");
-        setSize(1050, 780);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-    }
+    private final CardLayout cardLayout = new CardLayout();
+    private final JPanel container = new JPanel(cardLayout);
+    private AuthPanel auth;
+    private VotingPanel voting;
+    private AdminPanel admin;
+    private String activeVoterID;
 
     public void launch() {
-        String[] opts = {"Server (Admin PC)", "Client (Voter PC)"};
-        int mode = JOptionPane.showOptionDialog(null, "Select Mode", "Network Setup", 0, 3, null, opts, opts[0]);
-        
-        try {
-            if (mode == 0) {
-                ElectionData.initialize();
-                NetworkServer.start();
-                setTitle("SERVER - IP: " + NetworkServer.getLocalIP());
-            } else {
-                isClient = true;
-                String ip = JOptionPane.showInputDialog("Server IP:", "192.168.1.");
-                NetworkClient.setServer(ip);
-                NetworkClient.testConnection();
-                ElectionData.nomineesByPosition = NetworkClient.fetchNominees();
-            }
-            initUI();
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
-            System.exit(0);
-        }
-    }
+        ElectionData.initialize();
 
-    private void initUI() {
-        authPanel = new AuthPanel(this);
-        votingPanel = new VotingPanel(this);
-        adminPanel = new AdminPanel(this);
-        mainContainer.add(authPanel, "AUTH");
-        mainContainer.add(votingPanel, "VOTING");
-        mainContainer.add(adminPanel, "ADMIN");
-        add(mainContainer);
+        auth = new AuthPanel(this);
+        voting = new VotingPanel(this);
+        admin = new AdminPanel(this);
+
+        container.add(auth, "AUTH");
+        container.add(voting, "VOTING");
+        container.add(admin, "ADMIN");
+
+        setTitle("NOVA FLOW v2.5 // SECURE BALLOT");
+        setSize(1440, 900);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        add(container);
         setVisible(true);
     }
 
-    public void startVoting(String gr, String name) {
-        this.activeGr = gr; this.activeName = name;
-        votingPanel.reset();
-        cardLayout.show(mainContainer, "VOTING");
+    public void transitionToScreen(String name) {
+        if (name.equals("ADMIN")) admin.sync();
+        cardLayout.show(container, name);
     }
 
-    public void commitVote(Map<String, String> choices) {
-        try {
-            if (isClient) NetworkClient.submitVote(activeGr, activeName, choices);
-            else { ElectionData.recordVoter(activeGr, activeName); ElectionData.submitVotes(choices); }
-            JOptionPane.showMessageDialog(this, "Vote Cast Successfully!");
-            authPanel.reset();
-            cardLayout.show(mainContainer, "AUTH");
-        } catch (Exception e) { JOptionPane.showMessageDialog(this, "Network Error!"); }
+    public void initiateVoting(String id) {
+        this.activeVoterID = id;
+        voting.loadNominees();
+        transitionToScreen("VOTING");
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new ElectionMain().launch());
+    public void finalizeBallot(Map<String, String> choices) {
+        ElectionData.commitBallot(activeVoterID, choices);
+        showSuccessOverlay();
+    }
+
+    private void showSuccessOverlay() {
+        JWindow win = new JWindow(this);
+        win.setSize(getSize());
+        win.setLocationRelativeTo(this);
+        win.getContentPane().setBackground(Color.BLACK);
+
+        JLabel msg = new JLabel("TRANSACTION INJECTED TO DATA STREAM", SwingConstants.CENTER);
+        msg.setFont(NovaTheme.FONT_HEADING);
+        msg.setForeground(NovaTheme.MATRIX_GREEN);
+        win.add(msg);
+        win.setVisible(true);
+
+        Timer t = new Timer(3000, e -> {
+            win.dispose();
+            auth.reset();
+            transitionToScreen("AUTH");
+        });
+        t.setRepeats(false); // STOP LOOP BUG
+        t.start();
     }
 }

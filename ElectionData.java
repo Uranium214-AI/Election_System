@@ -1,81 +1,60 @@
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class ElectionData {
-    public static final String WORK_DIR = "./ElectionSystem/";
-    private static final String NOMINEES_FILE = WORK_DIR + "nominees.csv";
-    private static final String VOTERS_FILE = WORK_DIR + "voted_registry.txt";
-    private static final String RESULTS_FILE = WORK_DIR + "election_results.csv";
+    private static final String DIR = "./ElectionStorage/";
+    private static final String REGISTRY = DIR + "voter_registry.txt";
+    private static final String BALLOT_LOG = DIR + "final_tallies.csv";
 
-    public static Map<String, List<String>> nomineesByPosition = new LinkedHashMap<>();
-    public static Map<String, Map<String, Integer>> voteTally = new ConcurrentHashMap<>();
+    public static Map<String, List<String>> nomineeMap = new LinkedHashMap<>();
+    public static Map<String, Map<String, Integer>> voteTally = new LinkedHashMap<>();
 
     public static void initialize() {
-        new File(WORK_DIR).mkdirs();
-        File csvFile = new File(NOMINEES_FILE);
-        if (!csvFile.exists()) generateDefaultNomineesFile();
-
-        try (BufferedReader r = new BufferedReader(new FileReader(NOMINEES_FILE))) {
-            String line;
-            while((line = r.readLine()) != null) {
-                String[] data = line.split(",");
-                if(data.length >= 2) {
-                    String pos = data[0].trim();
-                    String details = data[1].trim() + (data.length > 2 ? "," + data[2].trim() : ",Default");
-                    nomineesByPosition.putIfAbsent(pos, new ArrayList<>());
-                    nomineesByPosition.get(pos).add(details);
-                }
-            }
-        } catch (Exception e) { System.out.println("Init Error: " + e.getMessage()); }
+        new File(DIR).mkdirs();
+        // Setup default categories if needed
+        setupDefaults();
     }
 
-    private static void generateDefaultNomineesFile() {
-        try (PrintWriter pw = new PrintWriter(new FileWriter(NOMINEES_FILE))) {
-            pw.println("Head Boy,Aryan Sharma,Puma");
-            pw.println("Head Boy,Rahul Desai,Sher");
-            pw.println("Head Girl,Priya Patel,Cheetah");
-            pw.println("Sports Captain,Rohan Gupta,Jaguar");
-        } catch (IOException e) {}
+    private static void setupDefaults() {
+        String[] categories = {"HEAD BOY", "HEAD GIRL", "SPORTS CAPTAIN"};
+        for (String c : categories) {
+            nomineeMap.put(c, new ArrayList<>());
+            voteTally.put(c, new HashMap<>());
+        }
+        // Manual entry for testing (Normally loaded from CSV)
+        addNominee("HEAD BOY", "Kartik M", "Jaguar");
+        addNominee("HEAD BOY", "Kanav Desai", "Sher");
+        addNominee("HEAD GIRL", "Sneha Rao", "Cheetah");
+        addNominee("SPORTS CAPTAIN", "Amit Singh", "Cheetah");
     }
 
-    public static synchronized boolean hasVoted(String gr, String name) {
-        File f = new File(VOTERS_FILE);
-        if (!f.exists()) return false;
-        try (Scanner s = new Scanner(f)) {
-            while (s.hasNextLine()) {
-                if (s.nextLine().trim().equalsIgnoreCase(gr + "," + name)) return true;
-            }
-        } catch (Exception e) {}
+    private static void addNominee(String cat, String name, String house) {
+        String data = name + "," + house;
+        nomineeMap.get(cat).add(data);
+        voteTally.get(cat).put(data, 0);
+    }
+
+    public static boolean checkHasVoted(String id) {
+        try (Scanner s = new Scanner(new File(REGISTRY))) {
+            while (s.hasNextLine()) if (s.nextLine().equals(id)) return true;
+        } catch (Exception e) { /* File might not exist yet */ }
         return false;
     }
 
-    public static synchronized void recordVoter(String gr, String name) {
-        try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(VOTERS_FILE, true)))) {
-            out.println(gr + "," + name);
-        } catch (IOException e) {}
-    }
+    public static void commitBallot(String id, Map<String, String> votes) {
+        try {
+            BufferedWriter rw = new BufferedWriter(new FileWriter(REGISTRY, true));
+            rw.write(id); rw.newLine(); rw.close();
 
-    public static synchronized void submitVotes(Map<String, String> choices) {
-        for (Map.Entry<String, String> entry : choices.entrySet()) {
-            voteTally.putIfAbsent(entry.getKey(), new HashMap<>());
-            Map<String, Integer> posVotes = voteTally.get(entry.getKey());
-            posVotes.put(entry.getValue(), posVotes.getOrDefault(entry.getValue(), 0) + 1);
-        }
-        exportResults();
-    }
-
-    private static void exportResults() {
-        try (PrintWriter w = new PrintWriter(new File(RESULTS_FILE))) {
-            w.println("Position,Winner,Votes,Runner Up,Votes");
-            for (String pos : voteTally.keySet()) {
-                List<Map.Entry<String, Integer>> list = new ArrayList<>(voteTally.get(pos).entrySet());
-                list.sort((a,b) -> b.getValue().compareTo(a.getValue()));
-                String p1 = list.get(0).getKey(); int v1 = list.get(0).getValue();
-                String p2 = (list.size() > 1) ? list.get(1).getKey() : "N/A";
-                int v2 = (list.size() > 1) ? list.get(1).getValue() : 0;
-                w.printf("%s,%s,%d,%s,%d\n", pos, p1, v1, p2, v2);
+            BufferedWriter bw = new BufferedWriter(new FileWriter(BALLOT_LOG, true));
+            for (var entry : votes.entrySet()) {
+                bw.write(id + "," + entry.getKey() + "," + entry.getValue());
+                bw.newLine();
+                // Update live memory tally for Admin Panel
+                Map<String, Integer> catTally = voteTally.get(entry.getKey());
+                catTally.put(entry.getValue(), catTally.get(entry.getValue()) + 1);
             }
-        } catch (Exception e) {}
+            bw.close();
+        } catch (IOException e) { e.printStackTrace(); }
     }
 }
