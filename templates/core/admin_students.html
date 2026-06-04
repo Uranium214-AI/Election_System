@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Manage Students - VVS Election{% endblock %}
+
+{% block content %}
+<div class="card mb-2">
+    <h2 style="margin-top:0;">Import Students via CSV</h2>
+    <p class="text-secondary">CSV columns required: <code>enrollment_number, full_name, house, class_grade</code></p>
+    <form method="POST" enctype="multipart/form-data" style="display:flex; gap:1rem; align-items:center;">
+        {% csrf_token %}
+        <input type="file" name="csv_file" accept=".csv" class="form-control" required style="max-width: 300px;">
+        <button type="submit" class="btn">Import CSV</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2 style="margin-top:0;">Student Roster ({{ students|length }})</h2>
+    
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+                    <th style="padding: 0.5rem;">Enrollment No.</th>
+                    <th style="padding: 0.5rem;">Name</th>
+                    <th style="padding: 0.5rem;">House</th>
+                    <th style="padding: 0.5rem;">Class</th>
+                    <th style="padding: 0.5rem;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for st in students %}
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 0.5rem;">{{ st.enrollment_number }}</td>
+                    <td style="padding: 0.5rem;">{{ st.full_name }}</td>
+                    <td style="padding: 0.5rem;">
+                        <span class="house-{{ st.house|lower }}" style="color: var(--house-color); font-weight:bold;">{{ st.house }}</span>
+                    </td>
+                    <td style="padding: 0.5rem;">{{ st.class_grade }}</td>
+                    <td style="padding: 0.5rem;">
+                        {% if st.has_voted %}
+                            <span style="color: #166534; font-weight:bold;">✅ Voted</span>
+                        {% else %}
+                            <span style="color: var(--text-secondary);">❌ Pending</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="padding: 1rem; text-align: center;">No students found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

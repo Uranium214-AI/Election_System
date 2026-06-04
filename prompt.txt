@@ -1,0 +1,303 @@
+
+# 🗳️ Vidya Valley School — Election System: Full Coding Agent Prompt
+
+---
+
+## PROJECT OVERVIEW
+
+Build a **local network election web application** for **Vidya Valley School (VVS)**, Pune. One computer acts as the **host/server**. All other computers (**slaves**) connect to it via the host's local IP in a browser. No internet required. Stack is **Django + MySQL**.
+
+---
+
+## TECH STACK
+
+- **Backend:** Django 4.x
+- **Database:** MySQL (`mysqlclient` or `PyMySQL`)
+- **Frontend:** Django templates + plain CSS + minimal vanilla JS
+- **Networking:** Django dev server bound to `0.0.0.0:8000`. Provide a `start.py` script that auto-detects local IP and prints it clearly.
+- **No external CDN dependencies** — all fonts and assets must be local or inline.
+
+---
+
+## STARTUP FLOW — HOST vs SLAVE
+
+When any computer opens the app at `http://<host-ip>:8000`, before anything else, it must go through a **startup screen**:
+
+### Startup Screen (`/setup`)
+- Full-page centered card with VVS logo
+- Two big buttons: **"I am the Host"** and **"I am a Voting Station"**
+
+**If Host:**
+- Redirects to `/admin/login`
+- Full admin access
+
+**If Voting Station (Slave):**
+- Shows a second screen: **"Select House for this Station"**
+- Four large house buttons, each styled in their house color:
+  - 🔵 Cheetah
+  - 🔴 Jaguar
+  - 🟠 Puma
+  - 🟡 Sher
+- Admin must enter a **station PIN** (set in Election Settings) to confirm the house selection — prevents students from changing the house themselves
+- Once confirmed, the house is **locked into the browser session** for this station
+- Station then shows `/vote/login` and from this point forward, all ballot logic uses the locked house
+- A small badge is always visible in the corner showing: `🔵 Cheetah Station` (or whichever house) so it's clear which station it is
+- The only way to change the house is to go back to `/setup` which again requires the PIN
+
+---
+
+## BRAND & DESIGN SYSTEM
+
+**Color Palette:**
+- Primary (Emerald Green): `#1a6b3c`
+- Secondary (Light Blue): `#4a90d9`
+- Accent (Golden Yellow): `#f0c020`
+- Background: `#f9f9f9`
+- Card background: `#ffffff`
+- Text primary: `#1a1a1a`
+- Text secondary: `#555555`
+- Border/divider: `#e0e0e0`
+
+**House Colors:**
+- 🔵 Cheetah: `#1565c0`
+- 🔴 Jaguar: `#c62828`
+- 🟠 Puma: `#e65100`
+- 🟡 Sher: `#f9a825`
+
+**Typography:** `'Segoe UI', Arial, sans-serif`
+
+**Logo:** Load from `static/img/vvs_logo.png`. Tagline: *"Society for Excellence in Education"*
+
+**UI Style:**
+- Clean institutional feel, rounded cards, subtle shadows
+- Emerald green navbar, white text
+- Green CTA buttons
+- Consistent header/footer on all pages
+- Mobile responsive via CSS flexbox/grid
+- House color CSS classes: `.house-cheetah`, `.house-jaguar`, `.house-puma`, `.house-sher` each setting `--house-color` CSS variable, applied dynamically in templates
+
+---
+
+## ELECTION POSITIONS
+
+**School-Wide (every student votes for these regardless of house):**
+1. Head Boy
+2. Head Girl
+3. Sports Prefect (Boy)
+4. Sports Prefect (Girl)
+
+**House-Specific (student only votes for their own house's positions):**
+5. House Captain (Boy)
+6. House Captain (Girl)
+7. House Vice Captain (Boy)
+8. House Vice Captain (Girl)
+
+Each student sees exactly **8 ballot items**: 4 school-wide + 4 from the house their station is locked to.
+
+---
+
+## DATABASE MODELS
+
+### `Student`
+- `enrollment_number` (unique, CharField) — login key
+- `has_voted` (BooleanField, default False)
+
+### `Position`
+- `name` (e.g. "Head Boy", "House Captain Boy")
+- `scope` (choices: `school_wide` / `house_specific`)
+- `house` (nullable — only for house_specific)
+- `gender_category` (Boy / Girl / Open)
+- `is_active` (BooleanField)
+
+### `Candidate`
+- `student` (FK to Student)
+- `position` (FK to Position)
+- `photo` (ImageField, optional)
+- `bio` (TextField, optional, max 300 chars)
+- `is_active` (BooleanField)
+
+### `Vote`
+- `voter` (FK to Student)
+- `candidate` (FK to Candidate)
+- `position` (FK to Position)
+- `timestamp` (auto_now_add)
+- **Unique constraint:** (`voter`, `position`)
+
+### `ElectionSettings`
+- `election_name`, `academic_year`
+- `is_open` (BooleanField)
+- `station_pin` (CharField) — 4–6 digit PIN required to set/change house on any slave station
+
+---
+
+## URL STRUCTURE
+
+```
+/setup                   → Startup screen (Host or Voting Station)
+/setup/house             → House selection screen (slave only)
+/vote/login              → Student enrollment number login
+/vote/ballot             → Voting ballot
+/vote/confirm            → Success confirmation
+/vote/already-voted      → Shown if student already voted
+/admin/login             → Admin login
+/admin/dashboard         → Stats overview
+/admin/election          → Election settings + station PIN
+/admin/students          → Student management + CSV import
+/admin/candidates        → Candidate management
+/admin/results           → Live results (admin only)
+/admin/results/data/     → JSON endpoint for live results polling
+/admin/export            → CSV + PDF export
+/admin/audit             → Audit log
+```
+
+---
+
+## FEATURE SPECIFICATIONS
+
+### Startup & Station Lock
+- `/setup` — no session required, always accessible
+- House selection requires PIN entry (validated against `ElectionSettings.station_pin`)
+- Selected house stored in Django session as `station_house`
+- Every vote-side view checks for `station_house` in session; if missing, redirects to `/setup`
+- Station badge (house name + color dot) shown in top-right corner on all voting pages
+
+### Student Login (`/vote/login`)
+- Single enrollment number input
+- Validates student exists, election is open, student hasn't voted
+- On success: store student ID in session alongside `station_house`
+- Error messages for: not found, already voted, election closed
+
+### Ballot (`/vote/ballot`)
+- Session-protected
+- Shows student name + house badge at top
+- **Section 1:** School-wide positions (4 cards)
+- **Section 2:** `[Station House]` House Positions (4 cards, styled in house color)
+- Each position = card with candidate radio options (photo or avatar placeholder, name, class)
+- Submit button disabled until all 8 positions selected (JS validation)
+- Votes saved atomically with `transaction.atomic()`; `has_voted` set to True; session cleared
+
+### Confirmation (`/vote/confirm`)
+- "✅ Vote recorded!" + student name + timestamp
+- Session cleared after this page loads
+- No back navigation
+
+### Already Voted (`/vote/already-voted`)
+- Shows name, time voted, green checkmark
+
+### Admin Dashboard (`/admin/dashboard`)
+- Stats cards: Total Students, Voted, % Turnout, Election Status
+- Per-house turnout mini-cards (each styled in house color)
+- Last 10 activity entries: "A student from [House] voted" — no names
+- Auto-refresh every 30s via JS fetch
+
+### Election Settings (`/admin/election`)
+- Set name, academic year, open/close toggle
+- Set/change **Station PIN** (shown masked, with reveal toggle)
+- Optional start/end datetime
+- "Reset All Votes" danger button (type "RESET" to confirm)
+
+### Student Management (`/admin/students`)
+- Table: Enrollment No., Name, House, Class, Voted, Time
+- Add single student form
+- Bulk CSV import (columns: `enrollment_number, full_name, house, class_grade`)
+- Downloadable sample CSV template link
+- Graceful error handling on import: skip bad rows, report count of skipped rows to admin
+- Filter by house and voted status
+
+### Candidate Management (`/admin/candidates`)
+- Grouped by position
+- Add: pick student, pick position, optional photo + bio
+- Edit / Remove
+- House color badge on house-specific positions
+
+### Results (`/admin/results`)
+- **Admin-only. Never exposed to students or stations.**
+- Groups by position, shows vote count + animated percentage bar per candidate
+- Leading candidate gets gold highlight border
+- House positions use house color for bars
+- Auto-refresh every 10s via `setInterval` fetching `/admin/results/data/` JSON endpoint
+
+### Export (`/admin/export`)
+- CSV: Position, Candidate, Enrollment No., Votes, Percentage
+- PDF via `reportlab`: VVS logo, election name, date, results table
+- Audit log CSV: Timestamp, House, Position (no candidate names)
+
+### Audit Log (`/admin/audit`)
+- Table: Timestamp, House, Position
+- Filter by house and time range
+
+---
+
+## SECURITY & INTEGRITY
+
+- DB-level unique constraint on (`voter`, `position`) — one vote per position per student
+- `transaction.atomic()` on all vote submissions
+- Session cleared immediately after vote cast
+- All `/admin/` views require `request.user.is_staff`
+- All `/vote/` views require `station_house` in session
+- CSRF on all forms
+- Station PIN required to assign or reassign a house to any station
+- Students cannot access any admin route
+- Session timeout: 30 minutes inactivity
+
+---
+
+## START SCRIPT (`start.py`)
+
+```python
+import subprocess, socket
+
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    ip = s.getsockname()[0]
+    s.close()
+    return ip
+
+ip = get_local_ip()
+print(f"\n{'='*50}")
+print(f"  VVS Election System — RUNNING")
+print(f"  Open on this machine : http://localhost:8000")
+print(f"  Other computers join : http://{ip}:8000")
+print(f"{'='*50}\n")
+subprocess.run(["python", "manage.py", "runserver", "0.0.0.0:8000"])
+```
+
+Also provide `start.bat` for Windows double-click launch.
+
+---
+
+## DJANGO SETTINGS NOTES
+
+- `TIME_ZONE = 'Asia/Kolkata'`, `USE_TZ = True`
+- `DATABASES` configured for MySQL with clearly labeled placeholders: `NAME`, `USER`, `PASSWORD`, `HOST = 'localhost'`, `PORT = '3306'`
+- `MEDIA_ROOT` and `MEDIA_URL` configured for candidate photo uploads
+- `STATIC_ROOT` and `STATIC_URL` configured correctly
+
+---
+
+## SEED COMMAND
+
+Include Django management command `python manage.py seed_demo` that creates:
+- 1 admin user (username: `admin`, password: `vvs2024`)
+- All 8 positions (4 school-wide + 4 per house = 20 house-specific total)
+- 20 demo students (5 per house)
+- 2 candidates per position
+- ElectionSettings with `station_pin = "1234"`, election open
+
+---
+
+## CODING INSTRUCTIONS
+
+1. Write **complete, fully runnable code** for every file. No `# TODO`, no placeholder comments, no skeleton functions.
+2. `base.html` defines all CSS variables and is extended by every template.
+3. The ballot page uses a single `<form>` with 8 radio groups. Server validates all 8 are answered before recording any vote.
+4. Results page JS uses `setInterval` every 10 seconds to fetch `/admin/results/data/` and update the DOM without page reload.
+5. House color classes set `--house-color` CSS variable and are applied dynamically via the student/station house field.
+6. CSV import skips duplicate enrollment numbers and invalid house names, and reports skip count to admin after import.
+7. All admin views check `request.user.is_staff` and redirect to `/admin/login` otherwise.
+8. The `/setup` flow and station PIN logic must be airtight — no way to bypass house assignment without the PIN.
+
+---
+
+Paste this into Claude Code, Cursor, or any coding agent and it will build the complete system. Let me know if you want anything else added!

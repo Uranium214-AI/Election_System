@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - VVS Election{% endblock %}
+
+{% block content %}
+<div class="grid mb-2">
+    <div class="card text-center" style="border-top: 4px solid var(--primary);">
+        <h3 class="text-secondary" style="margin-top:0;">Total Students</h3>
+        <div style="font-size: 2.5rem; font-weight: bold;">{{ total }}</div>
+    </div>
+    <div class="card text-center" style="border-top: 4px solid var(--secondary);">
+        <h3 class="text-secondary" style="margin-top:0;">Votes Cast</h3>
+        <div style="font-size: 2.5rem; font-weight: bold;">{{ voted }}</div>
+    </div>
+    <div class="card text-center" style="border-top: 4px solid var(--accent);">
+        <h3 class="text-secondary" style="margin-top:0;">Turnout</h3>
+        <div style="font-size: 2.5rem; font-weight: bold;">{{ turnout|floatformat:1 }}%</div>
+    </div>
+    <div class="card text-center" style="border-top: 4px solid {% if settings.is_open %}#4ade80{% else %}#f87171{% endif %};">
+        <h3 class="text-secondary" style="margin-top:0;">Status</h3>
+        <div style="font-size: 1.5rem; font-weight: bold; margin-top: 1rem;">
+            {% if settings.is_open %}<span style="color: #166534;">🟢 OPEN</span>{% else %}<span style="color: #991b1b;">🔴 CLOSED</span>{% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h2 style="margin-top:0;">Admin Navigation</h2>
+        <ul style="list-style:none; padding:0;">
+            <li class="mb-1"><a href="{% url 'admin_election' %}" class="btn" style="width:100%; text-align:left; background:var(--bg); color:var(--text-primary); border:1px solid var(--border);">⚙️ Election Settings</a></li>
+            <li class="mb-1"><a href="{% url 'admin_students' %}" class="btn" style="width:100%; text-align:left; background:var(--bg); color:var(--text-primary); border:1px solid var(--border);">👥 Manage Students</a></li>
+            <li class="mb-1"><a href="{% url 'admin_candidates' %}" class="btn" style="width:100%; text-align:left; background:var(--bg); color:var(--text-primary); border:1px solid var(--border);">🏆 Manage Candidates</a></li>
+            <li class="mb-1"><a href="{% url 'admin_results' %}" class="btn" style="width:100%; text-align:left; background:var(--secondary);">📊 Live Results</a></li>
+            <li class="mb-1"><a href="{% url 'admin_export' %}" class="btn" style="width:100%; text-align:left; background:var(--bg); color:var(--text-primary); border:1px solid var(--border);">📥 Export Data</a></li>
+            <li class="mb-1"><a href="{% url 'admin_audit' %}" class="btn" style="width:100%; text-align:left; background:var(--bg); color:var(--text-primary); border:1px solid var(--border);">📝 Audit Log</a></li>
+        </ul>
+    </div>
+    
+    <div class="card">
+        <h2 style="margin-top:0;">Recent Activity</h2>
+        <div id="activity-log">
+            {% for vote in recent_votes %}
+                <div style="padding: 0.5rem; border-bottom: 1px solid var(--border);">
+                    A student from <strong class="house-{{ vote.voter.house|lower }}" style="color: var(--house-color)">{{ vote.voter.house }}</strong> voted
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">{{ vote.timestamp|date:"M d, Y H:i:s" }}</div>
+                </div>
+            {% empty %}
+                <p>No votes cast yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    setInterval(() => {
+        window.location.reload();
+    }, 30000);
+</script>
+{% endblock %}

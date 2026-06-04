@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Audit Log - VVS Election{% endblock %}
+
+{% block content %}
+<div class="card mb-2">
+    <h2 style="margin-top:0;">Filter Audit Logs</h2>
+    <form method="GET" style="display:flex; gap:1rem; align-items:center;">
+        <select name="house" class="form-control" style="max-width: 200px;">
+            <option value="">All Houses...</option>
+            <option value="Cheetah" {% if request.GET.house == 'Cheetah' %}selected{% endif %}>Cheetah</option>
+            <option value="Jaguar" {% if request.GET.house == 'Jaguar' %}selected{% endif %}>Jaguar</option>
+            <option value="Puma" {% if request.GET.house == 'Puma' %}selected{% endif %}>Puma</option>
+            <option value="Sher" {% if request.GET.house == 'Sher' %}selected{% endif %}>Sher</option>
+        </select>
+        <button type="submit" class="btn">Filter</button>
+        <a href="{% url 'admin_audit' %}" class="btn" style="background:#555;">Clear</a>
+    </form>
+</div>
+
+<div class="card">
+    <h2 style="margin-top:0;">Vote Audit Log</h2>
+    <p class="text-secondary">Shows a chronological list of votes cast. For privacy, candidate names are not shown.</p>
+    
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+                    <th style="padding: 0.5rem;">Timestamp</th>
+                    <th style="padding: 0.5rem;">Voter House</th>
+                    <th style="padding: 0.5rem;">Position</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 0.5rem;">{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
+                    <td style="padding: 0.5rem;">
+                        <span class="house-{{ log.voter.house|lower }}" style="color: var(--house-color); font-weight:bold;">{{ log.voter.house }}</span>
+                    </td>
+                    <td style="padding: 0.5rem;">{{ log.position.name }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" style="padding: 1rem; text-align: center;">No logs found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

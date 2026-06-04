@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Export Data - VVS Election{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <h2 style="margin-top:0;">Export Election Data</h2>
+    <p class="text-secondary mb-2">Download election results for offline review or archiving.</p>
+    
+    <div class="grid">
+        <a href="{% url 'admin_export' %}?format=csv" class="btn text-center" style="padding: 2rem;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
+            Export as CSV
+        </a>
+        
+        <a href="{% url 'admin_export' %}?format=pdf" class="btn text-center" style="background-color: #c62828; padding: 2rem;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
+            Export as PDF
+        </a>
+    </div>
+</div>
+{% endblock %}

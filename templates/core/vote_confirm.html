@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Vote Confirmed - VVS Election{% endblock %}
+
+{% block content %}
+<div class="card text-center" style="max-width: 600px; margin: 4rem auto; padding: 4rem 2rem;">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+    <h1 style="color: var(--primary);">Vote Recorded!</h1>
+    {% if student %}
+        <p style="font-size: 1.2rem;">Thank you, <strong>{{ student.full_name }}</strong>.</p>
+    {% endif %}
+    <p class="text-secondary">Your vote has been securely saved.</p>
+    
+    <div class="mt-2">
+        <a href="{% url 'vote_login' %}" class="btn">Return to Login for Next Voter</a>
+    </div>
+</div>
+<script>
+    // Prevent going back to ballot
+    history.pushState(null, null, location.href);
+    window.onpopstate = function () {
+        history.go(1);
+    };
+    // Auto redirect after 5 seconds
+    setTimeout(() => {
+        window.location.href = "{% url 'vote_login' %}";
+    }, 5000);
+</script>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Voter Login - VVS Election{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 4rem auto; text-align: center;">
+    <h2 class="mb-2">Student Voting</h2>
+    <p class="text-secondary mb-2">Please enter your Enrollment Number to proceed to the ballot.</p>
+    
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-group text-left" style="text-align: left;">
+            <label for="enrollment_number">Enrollment Number</label>
+            <input type="text" name="enrollment_number" id="enrollment_number" class="form-control" required autocomplete="off" autofocus>
+        </div>
+        <button type="submit" class="btn mt-1" style="width: 100%; font-size: 1.1rem;">Start Voting</button>
+    </form>
+</div>
+{% endblock %}

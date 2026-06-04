@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Already Voted - VVS Election{% endblock %}
+
+{% block content %}
+<div class="card text-center" style="max-width: 600px; margin: 4rem auto; padding: 4rem 2rem;">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">⚠️</div>
+    <h2>Already Voted</h2>
+    {% if student %}
+        <p style="font-size: 1.2rem;"><strong>{{ student.full_name }}</strong>, our records show you have already cast your vote.</p>
+    {% endif %}
+    <p class="text-secondary">If you believe this is an error, please contact the election administrator.</p>
+    
+    <div class="mt-2">
+        <a href="{% url 'vote_login' %}" class="btn">Return to Login</a>
+    </div>
+</div>
+<script>
+    setTimeout(() => {
+        window.location.href = "{% url 'vote_login' %}";
+    }, 5000);
+</script>
+{% endblock %}

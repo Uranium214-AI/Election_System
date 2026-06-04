@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Setup - VVS Election{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 4rem auto; text-align: center;">
+    <h2 class="mb-2">System Setup</h2>
+    <p class="text-secondary mb-2">Welcome to the VVS Election System. Please select the role of this computer.</p>
+    
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit" name="action" value="host" class="btn" style="width: 100%; margin-bottom: 1rem; font-size: 1.2rem; padding: 1.5rem; background-color: var(--secondary);">
+            💻 I am the Host (Admin)
+        </button>
+        <button type="submit" name="action" value="station" class="btn" style="width: 100%; font-size: 1.2rem; padding: 1.5rem;">
+            🗳️ I am a Voting Station
+        </button>
+    </form>
+</div>
+{% endblock %}

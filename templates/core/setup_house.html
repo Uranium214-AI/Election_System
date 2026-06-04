@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Station Setup - VVS Election{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 2rem auto;">
+    <h2 class="text-center mb-2">Select House for this Station</h2>
+    <p class="text-secondary text-center mb-2">Lock this computer to a specific house. Requires Admin PIN.</p>
+    
+    <form method="POST">
+        {% csrf_token %}
+        <div class="grid mb-2">
+            <div>
+                <input type="radio" id="cheetah" name="house" value="Cheetah" required style="display:none;">
+                <label for="cheetah" class="btn btn-house house-cheetah" onclick="document.querySelectorAll('.btn-house').forEach(el=>el.style.opacity=0.6); this.style.opacity=1;">🔵 Cheetah</label>
+            </div>
+            <div>
+                <input type="radio" id="jaguar" name="house" value="Jaguar" style="display:none;">
+                <label for="jaguar" class="btn btn-house house-jaguar" onclick="document.querySelectorAll('.btn-house').forEach(el=>el.style.opacity=0.6); this.style.opacity=1;">🔴 Jaguar</label>
+            </div>
+            <div>
+                <input type="radio" id="puma" name="house" value="Puma" style="display:none;">
+                <label for="puma" class="btn btn-house house-puma" onclick="document.querySelectorAll('.btn-house').forEach(el=>el.style.opacity=0.6); this.style.opacity=1;">🟠 Puma</label>
+            </div>
+            <div>
+                <input type="radio" id="sher" name="house" value="Sher" style="display:none;">
+                <label for="sher" class="btn btn-house house-sher" onclick="document.querySelectorAll('.btn-house').forEach(el=>el.style.opacity=0.6); this.style.opacity=1;">🟡 Sher</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="pin">Station PIN</label>
+            <input type="password" name="pin" id="pin" class="form-control" required placeholder="Enter PIN to confirm">
+        </div>
+
+        <button type="submit" class="btn" style="width:100%;">Lock Station</button>
+    </form>
+    
+    <div class="text-center mt-2">
+        <a href="{% url 'setup' %}" style="color: var(--text-secondary);">Back to Setup</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Live Results - VVS Election{% endblock %}
+
+{% block extra_css %}
+<style>
+    .result-bar-container {
+        width: 100%;
+        background-color: var(--border);
+        border-radius: 4px;
+        height: 24px;
+        margin-top: 0.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .result-bar {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 1s ease-in-out;
+        display: flex;
+        align-items: center;
+        padding-left: 0.5rem;
+        color: white;
+        font-weight: bold;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+    
+    .candidate-row {
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        border-radius: 6px;
+        border: 2px solid transparent;
+        transition: border-color 0.3s;
+    }
+    
+    .candidate-row.winner {
+        border-color: var(--accent);
+        background-color: #fefce8;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card mb-2" style="display:flex; justify-content:space-between; align-items:center;">
+    <h2 style="margin:0;">📊 Live Election Results</h2>
+    <span class="badge" style="background:var(--bg); border:1px solid var(--border); color:var(--text-secondary);" id="last-updated">Updating...</span>
+</div>
+
+<div id="results-container">
+    <!-- Results populated by JS -->
+    <div class="text-center text-secondary py-2">Loading live results...</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function getHouseColorHex(houseName) {
+        if (!houseName) return '#1a6b3c'; // primary
+        const h = houseName.toLowerCase();
+        if (h === 'cheetah') return '#1565c0';
+        if (h === 'jaguar') return '#c62828';
+        if (h === 'puma') return '#e65100';
+        if (h === 'sher') return '#f9a825';
+        return '#1a6b3c';
+    }
+
+    async function fetchResults() {
+        try {
+            const res = await fetch("{% url 'admin_results_data' %}");
+            const data = await res.json();
+            
+            const container = document.getElementById('results-container');
+            container.innerHTML = '';
+            
+            data.results.forEach(pos => {
+                const card = document.createElement('div');
+                card.className = 'card mb-2';
+                
+                let houseBadge = '';
+                if (pos.scope === 'house_specific') {
+                    houseBadge = `<span style="color: ${getHouseColorHex(pos.house)}; font-size: 0.9rem;">(${pos.house})</span>`;
+                }
+                
+                let html = `<h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:0.5rem;">${pos.position_name} ${houseBadge} <span style="float:right; font-size:0.9rem; color:var(--text-secondary); font-weight:normal;">Total Votes: ${pos.total_votes}</span></h3>`;
+                
+                pos.candidates.forEach((cand, index) => {
+                    // Highlight the first candidate if they have votes (winner/leading)
+                    const isWinner = index === 0 && cand.votes > 0;
+                    const rowClass = isWinner ? 'candidate-row winner' : 'candidate-row';
+                    
+                    // Determine bar color
+                    let barColor = 'var(--primary)';
+                    if (pos.scope === 'house_specific') {
+                        barColor = getHouseColorHex(pos.house);
+                    } else if (isWinner) {
+                        barColor = 'var(--accent)';
+                    }
+                    
+                    let textColor = isWinner ? '#000' : '#fff';
+                    if (isWinner && pos.scope !== 'house_specific') textColor = '#000'; // Gold bar needs dark text
+                    
+                    html += `
+                    <div class="${rowClass}">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong>${cand.name}</strong>
+                            <span>${cand.votes} votes (${cand.percentage}%)</span>
+                        </div>
+                        <div class="result-bar-container">
+                            <div class="result-bar" style="width: ${cand.percentage}%; background-color: ${barColor}; color: ${textColor};"></div>
+                        </div>
+                    </div>
+                    `;
+                });
+                
+                if (pos.candidates.length === 0) {
+                    html += `<p class="text-secondary text-center">No candidates.</p>`;
+                }
+                
+                card.innerHTML = html;
+                container.appendChild(card);
+            });
+            
+            const now = new Date();
+            document.getElementById('last-updated').textContent = `Last updated: ${now.toLocaleTimeString()}`;
+            
+        } catch (e) {
+            console.error("Error fetching results:", e);
+        }
+    }
+
+    // Initial fetch
+    fetchResults();
+    
+    // Poll every 10 seconds
+    setInterval(fetchResults, 10000);
+</script>
+{% endblock %}
