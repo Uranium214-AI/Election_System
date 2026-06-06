@@ -39,7 +39,7 @@ Follow these steps to set up and run the voting system in your local network.
 
 ### 📋 Prerequisites
 
-- **Java Development Kit (JDK) 21+** installed on all participating machines.
+- **Java Development Kit (JDK) 11+** installed on all participating machines.
 - Ensure all terminals are connected to the same **Local Area Network (LAN)**.
 
 ### ⚙️ Running the Application
