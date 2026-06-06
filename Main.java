@@ -1,9 +1,18 @@
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 
 public class Main {
     public static void main(String[] args) {
-        // Enforce hardware acceleration for the particle engines
-        System.setProperty("sun.java2d.opengl", "true");
-        SwingUtilities.invokeLater(() -> new ElectionMain().launch());
+        // Configure cross-platform system rendering properties
+        try { 
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); 
+        } catch (Exception e) {
+            System.err.println("System Look and Feel initialization skipped. Falling back to default layout.");
+        }
+
+        // Initialize and launch the main application interface on the Event Dispatch Thread
+        SwingUtilities.invokeLater(() -> {
+            ElectionFrame appFrame = new ElectionFrame();
+            appFrame.launch();
+        });
     }
 }
