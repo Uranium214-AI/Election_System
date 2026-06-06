@@ -3,83 +3,72 @@ import java.awt.*;
 import java.util.Map;
 
 public class ElectionMain extends JFrame {
-    private final CardLayout cardLayout = new CardLayout();
-    private final JPanel screenContainer = new JPanel(cardLayout);
+    private CardLayout cardLayout = new CardLayout();
+    private JPanel mainContainer = new JPanel(cardLayout);
     private AuthPanel authPanel;
     private VotingPanel votingPanel;
     private AdminPanel adminPanel;
-    private String activeVoterID;
+    public static boolean isClient = false;
+    private String activeGr, activeName;
+
+    public ElectionMain() {
+        setTitle("ICSE Election System 2026");
+        setSize(1050, 780);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+    }
 
     public void launch() {
-        // Build file infrastructure matrices
-        ElectionData.initialize();
+        String[] opts = {"Server (Admin PC)", "Client (Voter PC)"};
+        int mode = JOptionPane.showOptionDialog(null, "Select Mode", "Network Setup", 0, 3, null, opts, opts[0]);
         
-        // Instantiate decoupled interface components
+        try {
+            if (mode == 0) {
+                ElectionData.initialize();
+                NetworkServer.start();
+                setTitle("SERVER - IP: " + NetworkServer.getLocalIP());
+            } else {
+                isClient = true;
+                String ip = JOptionPane.showInputDialog("Server IP:", "192.168.1.");
+                NetworkClient.setServer(ip);
+                NetworkClient.testConnection();
+                ElectionData.nomineesByPosition = NetworkClient.fetchNominees();
+            }
+            initUI();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
+            System.exit(0);
+        }
+    }
+
+    private void initUI() {
         authPanel = new AuthPanel(this);
         votingPanel = new VotingPanel(this);
         adminPanel = new AdminPanel(this);
-
-        // Mount layers into the structural layout pipeline
-        screenContainer.add(authPanel, "AUTH");
-        screenContainer.add(votingPanel, "VOTING");
-        screenContainer.add(adminPanel, "ADMIN");
-
-        // Master Frame Window Configuration Properties
-        setTitle("NOVA FLOW v3.5 // SECURE MULTI-THREAD SYSTEM CORE");
-        setSize(1440, 900);
-        setMinimumSize(new Dimension(1024, 768));
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        add(screenContainer);
+        mainContainer.add(authPanel, "AUTH");
+        mainContainer.add(votingPanel, "VOTING");
+        mainContainer.add(adminPanel, "ADMIN");
+        add(mainContainer);
         setVisible(true);
     }
 
-    public void transitionToScreen(String screenName) {
-        if (screenName.equalsIgnoreCase("ADMIN")) {
-            adminPanel.sync();
-        }
-        cardLayout.show(screenContainer, screenName);
+    public void startVoting(String gr, String name) {
+        this.activeGr = gr; this.activeName = name;
+        votingPanel.reset();
+        cardLayout.show(mainContainer, "VOTING");
     }
 
-    public void initiateVoting(String voterID) {
-        this.activeVoterID = voterID;
-        votingPanel.loadNominees();
-        transitionToScreen("VOTING");
-    }
-
-    public void finalizeBallot(Map<String, String> selectedChoices) {
-        ElectionData.commitBallot(activeVoterID, selectedChoices);
-        showSuccessOverlay();
-    }
-
-    private void showSuccessOverlay() {
-        JWindow overlayWindow = new JWindow(this);
-        overlayWindow.setSize(getSize());
-        overlayWindow.setLocationRelativeTo(this);
-        overlayWindow.getContentPane().setBackground(Color.BLACK);
-        overlayWindow.setLayout(new GridBagLayout()); 
-
-        JLabel successMessage = new JLabel("  TRANSACTION SECURELY LOGGED TO LEDGER FILE...");
-        successMessage.setFont(NovaTheme.FONT_HEADING);
-        successMessage.setForeground(NovaTheme.MATRIX_GREEN);
-
-        // Construct and attach your isolated loading component
-        MultiColorLoadingIcon loadingAnimation = new MultiColorLoadingIcon(48, successMessage);
-        loadingAnimation.setStrokeThickness(5.0f);
-        successMessage.setIcon(loadingAnimation);
-        
-        loadingAnimation.start();
-        overlayWindow.add(successMessage);
-        overlayWindow.setVisible(true);
-
-        // Multi-thread delay loop (3000ms) handles safe storage verification
-        Timer shutdownTimer = new Timer(3000, event -> {
-            loadingAnimation.stop(); // Structural cleanup: kills animation thread safety loops
-            overlayWindow.dispose();
+    public void commitVote(Map<String, String> choices) {
+        try {
+            if (isClient) NetworkClient.submitVote(activeGr, activeName, choices);
+            else { ElectionData.recordVoter(activeGr, activeName); ElectionData.submitVotes(choices); }
+            JOptionPane.showMessageDialog(this, "Vote Cast Successfully!");
             authPanel.reset();
-            transitionToScreen("AUTH");
-        });
-        shutdownTimer.setRepeats(false); 
-        shutdownTimer.start();
+            cardLayout.show(mainContainer, "AUTH");
+        } catch (Exception e) { JOptionPane.showMessageDialog(this, "Network Error!"); }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new ElectionMain().launch());
     }
 }
