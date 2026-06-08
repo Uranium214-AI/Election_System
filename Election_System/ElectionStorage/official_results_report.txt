@@ -1,0 +1,43 @@
+=======================================================
+    VIDYA VALLEY SCHOOL ELECTION - OFFICIAL RESULTS    
+=======================================================
+System Audited Unique Ballots: 2
+=======================================================
+
+>>> BALLOT CATEGORY NODE: HEAD PREFECT BOY
+    ELECTED CONSTITUENT WINNER: Kartik M [2 V]
+
+    Linear Metric Distribution Matrix:
+     -> Kartik M           : 2 Total Votes
+     -> Shlok S            : 0 Total Votes
+-------------------------------------------------------
+>>> BALLOT CATEGORY NODE: HEAD GIRL
+    INTEGRITY LOG: TIED FIRST PLACE DETECTED
+    WINNERS: Navya P [1 V] && Anusha Kotnis [1 V]
+
+    Linear Metric Distribution Matrix:
+     -> Navya P            : 1 Total Votes
+     -> Anusha Kotnis      : 1 Total Votes
+-------------------------------------------------------
+>>> BALLOT CATEGORY NODE: SPORTS PREFECT BOY
+    ELECTED CONSTITUENT WINNER: Jasveer P [2 V]
+
+    Linear Metric Distribution Matrix:
+     -> Jasveer P          : 2 Total Votes
+     -> Vihaan             : 0 Total Votes
+-------------------------------------------------------
+>>> BALLOT CATEGORY NODE: HOUSE CAPTAIN
+    ELECTED CONSTITUENT WINNER: Eshaan S [2 V]
+
+    Linear Metric Distribution Matrix:
+     -> Eshaan S           : 2 Total Votes
+     -> arjun s            : 0 Total Votes
+-------------------------------------------------------
+>>> BALLOT CATEGORY NODE: HOUSE VICE CAPTAIN
+    ELECTED CONSTITUENT WINNER: Adhrit D [2 V]
+
+    Linear Metric Distribution Matrix:
+     -> Adhrit D           : 2 Total Votes
+     -> Parth K            : 0 Total Votes
+-------------------------------------------------------
+SYSTEM STORAGE DATA INTERFACES TERMINATED SECURELY.
