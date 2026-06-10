@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;
@@ -12,7 +13,7 @@ public class VotingPanel extends JPanel {
     private final List<String> processingCategories = new ArrayList<>();
     private final Map<String, ButtonGroup> registeredGroups = new HashMap<>();
     private int deckPointer = 0;
-
+    
     private final JLabel visualIndexMetric;
     private final JButton returnStepButton;
     private final JButton advanceStepButton;
@@ -26,25 +27,25 @@ public class VotingPanel extends JPanel {
         headerBar.setBackground(NovaTheme.PANEL_BG);
         headerBar.setBorder(BorderFactory.createEmptyBorder(20, 35, 20, 35));
 
-        JLabel titleString = new JLabel("BALLOT PIPELINE INTERFACE");
+        JLabel titleString = new JLabel("LIVE VOTING INTERFACE MATRIX");
         titleString.setFont(NovaTheme.FONT_HEADING);
         titleString.setForeground(Color.WHITE);
-
-        visualIndexMetric = new JLabel("MODULE 0/0");
+        
+        visualIndexMetric = new JLabel("BALLOT NODE 0/0");
         visualIndexMetric.setFont(NovaTheme.FONT_MONO);
         visualIndexMetric.setForeground(NovaTheme.NEON_CYAN);
 
         headerBar.add(titleString, BorderLayout.WEST);
         headerBar.add(visualIndexMetric, BorderLayout.EAST);
         add(headerBar, BorderLayout.NORTH);
-
+        
         cardsDeckPanel.setBackground(NovaTheme.OBSIDIAN);
         add(cardsDeckPanel, BorderLayout.CENTER);
 
         JPanel footerBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 20));
         footerBar.setBackground(NovaTheme.PANEL_BG);
 
-        returnStepButton = new JButton("<< PREVIOUS STEP");
+        returnStepButton = new JButton("<< PREVIOUS GATE");
         formatFooterButton(returnStepButton);
         returnStepButton.addActionListener(event -> travelDeck(-1));
 
@@ -67,13 +68,33 @@ public class VotingPanel extends JPanel {
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
 
-    public void loadNominees() {
+    public void loadNominees(String voterHouse) {
         cardsDeckPanel.removeAll();
         processingCategories.clear();
         registeredGroups.clear();
-        processingCategories.addAll(ElectionData.nomineeMap.keySet());
 
-        for (String cat : processingCategories) {
+        for (String cat : ElectionData.nomineeMap.keySet()) {
+            List<String> rawNominees = ElectionData.nomineeMap.get(cat);
+            List<String> filteredNominees = new ArrayList<>();
+            
+            boolean isHouseSpecific = cat.toUpperCase().contains("HOUSE") || cat.toUpperCase().contains("CAPTAIN");
+
+            for (String nomineeToken : rawNominees) {
+                String[] structuralData = nomineeToken.split(",");
+                String internalHouse = structuralData.length > 1 ? structuralData[1].trim() : "";
+
+                if (isHouseSpecific) {
+                    if (internalHouse.equalsIgnoreCase(voterHouse.trim())) {
+                        filteredNominees.add(nomineeToken);
+                    }
+                } else {
+                    filteredNominees.add(nomineeToken);
+                }
+            }
+
+            if (filteredNominees.isEmpty()) continue;
+            processingCategories.add(cat);
+
             JPanel outerWrapper = new JPanel(new GridBagLayout());
             outerWrapper.setBackground(NovaTheme.OBSIDIAN);
 
@@ -81,11 +102,11 @@ public class VotingPanel extends JPanel {
             constraintCard.setLayout(new BoxLayout(constraintCard, BoxLayout.Y_AXIS));
             constraintCard.setBackground(NovaTheme.CARD_BG);
             constraintCard.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(Color.DARK_GRAY, 1),
-                    BorderFactory.createEmptyBorder(40, 50, 40, 50)
+                BorderFactory.createLineBorder(Color.DARK_GRAY, 1),
+                BorderFactory.createEmptyBorder(40, 50, 40, 50)
             ));
 
-            JLabel titleHeading = new JLabel("CHOOSE REPRESENTATIVE FOR: " + cat);
+            JLabel titleHeading = new JLabel("ACTIVE POSITION: " + cat);
             titleHeading.setFont(new Font("Segoe UI", Font.BOLD, 22));
             titleHeading.setForeground(NovaTheme.NEON_CYAN);
             titleHeading.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -93,13 +114,11 @@ public class VotingPanel extends JPanel {
             constraintCard.add(Box.createVerticalStrut(35));
 
             ButtonGroup selectionGroup = new ButtonGroup();
-            List<String> listValues = ElectionData.nomineeMap.get(cat);
-
             JPanel candidateGridPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
             candidateGridPanel.setBackground(NovaTheme.CARD_BG);
             candidateGridPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-            for (String componentNode : listValues) {
+            for (String componentNode : filteredNominees) {
                 String[] structuralData = componentNode.split(",");
                 String individualName = structuralData[0];
                 String internalHouse = structuralData.length > 1 ? structuralData[1] : "Independent Core";
@@ -107,8 +126,8 @@ public class VotingPanel extends JPanel {
                 JPanel profileContainer = new JPanel(new BorderLayout(15, 10));
                 profileContainer.setBackground(new Color(25, 28, 42));
                 profileContainer.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(NovaTheme.getHouseColor(internalHouse), 1),
-                        BorderFactory.createEmptyBorder(12, 15, 12, 15)
+                    BorderFactory.createLineBorder(NovaTheme.getHouseColor(internalHouse), 1),
+                    BorderFactory.createEmptyBorder(12, 15, 12, 15)
                 ));
 
                 JPanel textDetailsCluster = new JPanel();
@@ -126,56 +145,41 @@ public class VotingPanel extends JPanel {
                 houseBadge.setFont(NovaTheme.FONT_SUB);
                 houseBadge.setForeground(NovaTheme.getHouseColor(internalHouse));
 
-                boolean hasImage = false;
                 JLabel photoDisplayLabel = new JLabel();
+                ImageIcon circularIcon = pullCircularCandidatePhoto(individualName, 130, NovaTheme.getHouseColor(internalHouse));
 
-                // Advanced Image I/O loading attempt
-                try {
-                    String cleanImageFilename = individualName.toLowerCase().replace(" ", "_") + ".jpg";
-                    File imgFile = new File("./ElectionStorage/assets/" + cleanImageFilename);
-                    if (imgFile.exists()) {
-                        BufferedImage rawImage = ImageIO.read(imgFile);
-                        Image scaledImg = rawImage.getScaledInstance(120, 140, Image.SCALE_SMOOTH);
-                        photoDisplayLabel.setIcon(new ImageIcon(scaledImg));
-                        photoDisplayLabel.setPreferredSize(new Dimension(120, 140));
-                        photoDisplayLabel.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY, 1));
-                        photoDisplayLabel.setHorizontalAlignment(JLabel.CENTER);
-                        hasImage = true;
-                    }
-                } catch (Exception ignored) {}
-
-                // Dynamic bounds checking for visual hierarchy
-                if (hasImage) {
-                    profileContainer.setPreferredSize(new Dimension(380, 170));
-                    textDetailsCluster.add(Box.createVerticalStrut(30));
+                if (circularIcon != null) {
+                    photoDisplayLabel.setIcon(circularIcon);
+                    profileContainer.setPreferredSize(new Dimension(410, 170));
+                    textDetailsCluster.add(Box.createVerticalStrut(35)); 
                     textDetailsCluster.add(optionRadio);
                     textDetailsCluster.add(Box.createVerticalStrut(8));
                     textDetailsCluster.add(houseBadge);
-
+                    
                     profileContainer.add(photoDisplayLabel, BorderLayout.WEST);
                     profileContainer.add(textDetailsCluster, BorderLayout.CENTER);
                 } else {
-                    profileContainer.setPreferredSize(new Dimension(280, 100));
-                    textDetailsCluster.add(Box.createVerticalStrut(10));
+                    profileContainer.setPreferredSize(new Dimension(280, 110));
+                    textDetailsCluster.add(Box.createVerticalStrut(15));
                     textDetailsCluster.add(optionRadio);
                     textDetailsCluster.add(Box.createVerticalStrut(6));
                     textDetailsCluster.add(houseBadge);
-
+                    
                     profileContainer.add(textDetailsCluster, BorderLayout.CENTER);
                 }
 
                 selectionGroup.add(optionRadio);
                 candidateGridPanel.add(profileContainer);
             }
-
+            
             registeredGroups.put(cat, selectionGroup);
             constraintCard.add(candidateGridPanel);
-
+            
             GridBagConstraints wrapGbc = new GridBagConstraints();
             wrapGbc.gridx = 0; wrapGbc.gridy = 0;
             wrapGbc.weightx = 1.0; wrapGbc.weighty = 1.0;
             wrapGbc.fill = GridBagConstraints.NONE;
-
+            
             outerWrapper.add(constraintCard, wrapGbc);
             cardsDeckPanel.add(outerWrapper, cat);
         }
@@ -184,12 +188,44 @@ public class VotingPanel extends JPanel {
         updateViewMatrix();
     }
 
+    private ImageIcon pullCircularCandidatePhoto(String studentName, int diameter, Color borderHouseColor) {
+        try {
+            String filename = studentName.toLowerCase().replace(" ", "_") + ".jpg";
+            File imgFile = new File("./ElectionStorage/assets/" + filename);
+            if (!imgFile.exists()) return null;
+
+            BufferedImage src = ImageIO.read(imgFile);
+            int size = Math.min(src.getWidth(), src.getHeight());
+            int x = (src.getWidth() - size) / 2;
+            int y = (src.getHeight() - size) / 2;
+            BufferedImage square = src.getSubimage(x, y, size, size);
+
+            BufferedImage canvas = new BufferedImage(diameter, diameter, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = canvas.createGraphics();
+            
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+            g2d.setClip(new Ellipse2D.Float(0, 0, diameter, diameter));
+            g2d.drawImage(square, 0, 0, diameter, diameter, null);
+
+            g2d.setClip(null);
+            g2d.setStroke(new BasicStroke(3.0f));
+            g2d.setColor(borderHouseColor);
+            g2d.drawOval(1, 1, diameter - 3, diameter - 3);
+
+            g2d.dispose();
+            return new ImageIcon(canvas);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private void travelDeck(int offsetDirection) {
         if (offsetDirection == 1 && !assertActiveSelection()) {
-            JOptionPane.showMessageDialog(this,
-                    "System Error: A candidate must be declared before shifting transaction vectors.",
-                    "SELECTION VALIDATION REQUIRED",
-                    JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, 
+                "Selection Flag Missing: You must vote for a candidate to move forward.", 
+                "VALIDATION FAULT", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -209,12 +245,12 @@ public class VotingPanel extends JPanel {
     private void updateViewMatrix() {
         CardLayout structuralLayout = (CardLayout) cardsDeckPanel.getLayout();
         structuralLayout.show(cardsDeckPanel, processingCategories.get(deckPointer));
-
+        
         visualIndexMetric.setText(String.format("MODULE %d / %d", deckPointer + 1, processingCategories.size()));
         returnStepButton.setEnabled(deckPointer > 0);
-
+        
         if (deckPointer == processingCategories.size() - 1) {
-            advanceStepButton.setText("INJECT BALLOT CONE");
+            advanceStepButton.setText("SUBMIT SECURE BALLOT");
             advanceStepButton.setForeground(NovaTheme.MATRIX_GREEN);
             advanceStepButton.setBorder(BorderFactory.createLineBorder(NovaTheme.MATRIX_GREEN, 1));
         } else {
@@ -226,8 +262,8 @@ public class VotingPanel extends JPanel {
 
     private void triggerTerminalUpload() {
         int selectionOption = JOptionPane.showConfirmDialog(this,
-                "Commit choices permanently? Data will overwrite live storage records.",
-                "SECURE SYSTEM TRANSMISSION",
+                "Confirm allocations? Submissions cannot be reversed once finalized.",
+                "LEDGER TRANSMISSION PROTOCOL",
                 JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 
         if (selectionOption == JOptionPane.YES_OPTION) {
