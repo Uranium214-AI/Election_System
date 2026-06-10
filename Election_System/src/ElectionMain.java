@@ -11,26 +11,21 @@ public class ElectionMain extends JFrame {
     private String activeVoterID;
 
     public void launch() {
-        // Initialize backend database and directories
         ElectionData.initialize();
-
-        // Instantiate the UI panels
+        
         authPanel = new AuthPanel(this);
         votingPanel = new VotingPanel(this);
         adminPanel = new AdminPanel(this);
 
-        // Map components to the CardLayout engine
         screenContainer.add(authPanel, "AUTH");
         screenContainer.add(votingPanel, "VOTING");
         screenContainer.add(adminPanel, "ADMIN");
 
-        setTitle("VIDYA VALLEY SECURE KIOSK // ELECTION FLOW v4.0");
-
-        // FULL SCREEN DYNAMIC KIOSK CONFIGURATION
-        setUndecorated(true); // Strips away the window taskbar and close buttons
-        setExtendedState(JFrame.MAXIMIZED_BOTH); // Forces absolute fullscreen scaling
+        setTitle("SECURE KIOSK OS // CORE FLOW ENGINE");
+        setUndecorated(true); 
+        setExtendedState(JFrame.MAXIMIZED_BOTH); 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-
+        
         add(screenContainer);
         setVisible(true);
     }
@@ -40,14 +35,13 @@ public class ElectionMain extends JFrame {
             adminPanel.sync();
         }
         cardLayout.show(screenContainer, screenName);
-        // Force an immediate re-draw of the UI to prevent ghosting
         getContentPane().revalidate();
         getContentPane().repaint();
     }
 
-    public void initiateVoting(String voterID) {
+    public void initiateVoting(String voterID, String voterHouse) {
         this.activeVoterID = voterID;
-        votingPanel.loadNominees();
+        votingPanel.loadNominees(voterHouse);
         transitionToScreen("VOTING");
     }
 
@@ -61,28 +55,27 @@ public class ElectionMain extends JFrame {
         overlayWindow.setSize(getSize());
         overlayWindow.setLocationRelativeTo(this);
         overlayWindow.getContentPane().setBackground(Color.BLACK);
-        overlayWindow.setLayout(new GridBagLayout());
+        overlayWindow.setLayout(new GridBagLayout()); 
 
-        JLabel successMessage = new JLabel("  TRANSACTION SECURELY LOGGED TO LEDGER FILE...");
+        JLabel successMessage = new JLabel("  BALLOT TRANSACTION SECURED TO DISK LEDGER...");
         successMessage.setFont(NovaTheme.FONT_HEADING);
         successMessage.setForeground(NovaTheme.MATRIX_GREEN);
 
         MultiColorLoadingIcon loadingAnimation = new MultiColorLoadingIcon(64, successMessage);
         loadingAnimation.setStrokeThickness(6.0f);
         successMessage.setIcon(loadingAnimation);
-
+        
         loadingAnimation.start();
         overlayWindow.add(successMessage);
         overlayWindow.setVisible(true);
 
-        // Allow the animation to play for 3 seconds before resetting the kiosk
-        Timer shutdownTimer = new Timer(3000, event -> {
-            loadingAnimation.stop();
+        Timer shutdownTimer = new Timer(2500, event -> {
+            loadingAnimation.stop(); 
             overlayWindow.dispose();
             authPanel.reset();
             transitionToScreen("AUTH");
         });
-        shutdownTimer.setRepeats(false);
+        shutdownTimer.setRepeats(false); 
         shutdownTimer.start();
     }
 }
