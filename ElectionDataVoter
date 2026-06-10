@@ -1,0 +1,74 @@
+import java.io.*;
+import java.net.*;
+import java.util.*;
+
+public class ElectionData {
+    // Modify this to point directly to the static LAN IP Address of your Admin PC
+    private static final String SERVER_IP = "192.168.1.100"; 
+    private static final int PORT = 8500;
+    private static final int NET_TIMEOUT_MS = 3500;
+
+    public static Map<String, List<String>> nomineeMap = new LinkedHashMap<>();
+
+    public static void initialize() {
+        nomineeMap.clear();
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(SERVER_IP, PORT), NET_TIMEOUT_MS);
+            PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+
+            out.println("GET_NOMINEES");
+            String line;
+            while ((line = in.readLine()) != null && !line.equals("END_OF_STREAM")) {
+                String[] segments = line.split(";");
+                if (segments.length >= 2) {
+                    nomineeMap.putIfAbsent(segments[0], new ArrayList<>());
+                    if (!nomineeMap.get(segments[0]).contains(segments[1])) {
+                        nomineeMap.get(segments[0]).add(segments[1]);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("[ETHERNET WARNING] Connection offline. Verify network hardware lines.");
+        }
+    }
+
+    public static boolean checkHasVoted(String identificationToken) {
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(SERVER_IP, PORT), NET_TIMEOUT_MS);
+            PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+
+            out.println("CHECK_VOTER");
+            out.println(identificationToken);
+            return "ALREADY_VOTED".equalsIgnoreCase(in.readLine());
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    public static void commitBallot(String voterID, Map<String, String> completedSelections) {
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(SERVER_IP, PORT), NET_TIMEOUT_MS);
+            PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+
+            out.println("COMMIT_VOTE");
+            out.println(voterID);
+            out.println(completedSelections.size());
+
+            for (Map.Entry<String, String> entry : completedSelections.entrySet()) {
+                out.println(entry.getKey() + ";" + entry.getValue());
+            }
+            in.readLine(); 
+        } catch (IOException e) {/**/}
+    }
+
+    public static void generateOfficialReport() {
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(SERVER_IP, PORT), NET_TIMEOUT_MS);
+            PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"), true);
+            out.println("GENERATE_REPORT");
+        } catch (IOException e) {/**/}
+    }
+}
